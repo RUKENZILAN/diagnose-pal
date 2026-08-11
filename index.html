@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title id="pageTitle">Symptom Checker for Clinicians</title>
+<meta id="pageDesc" name="description" content="Select patient symptoms and get ranked possible conditions with confidence scores, in English or Turkish.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F6F2;
+    --card:#FFFFFF;
+    --ink:#17241F;
+    --ink-soft:#48584F;
+    --muted:#7C8B84;
+    --border:#DFE4DD;
+    --border-soft:#EBEEE8;
+    --primary:#1F5D4C;
+    --primary-dark:#153F34;
+    --primary-soft:#E3EEE8;
+    --urgent:#9C3B2E;
+    --urgent-soft:#F5E1DC;
+    --prompt:#A16A1E;
+    --prompt-soft:#F3E6CD;
+    --routine:#5C6B64;
+    --routine-soft:#E9ECE7;
+    --font-display:'Source Serif 4', Georgia, serif;
+    --font-body:'IBM Plex Sans', -apple-system, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--primary-soft);color:var(--primary-dark);}
+
+  button{font-family:inherit;cursor:pointer;}
+  input{font-family:inherit;}
+
+  /* ---------- header ---------- */
+  header{
+    border-bottom:1px solid var(--border);
+    background:rgba(255,255,255,0.9);
+    backdrop-filter:blur(6px);
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+  .header-inner{
+    max-width:1180px;
+    margin:0 auto;
+    padding:20px 28px 0;
+  }
+  .header-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding-bottom:16px;
+  }
+  .brand{display:flex;align-items:center;gap:13px;}
+  .brand-mark{
+    width:42px;height:42px;border-radius:10px;
+    background:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;flex-shrink:0;
+  }
+  .brand-text h1{
+    font-family:var(--font-display);
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+    line-height:1.2;
+  }
+  .brand-text p{
+    margin:2px 0 0;
+    font-size:11.5px;
+    color:var(--muted);
+    letter-spacing:0.02em;
+  }
+
+  .lang-toggle{
+    display:flex;align-items:center;
+    border:1px solid var(--border);
+    background:var(--routine-soft);
+    border-radius:999px;
+    padding:3px;
+  }
+  .lang-toggle button{
+    border:none;background:transparent;
+    padding:6px 14px;
+    font-size:11px;font-weight:600;
+    letter-spacing:0.06em;text-transform:uppercase;
+    border-radius:999px;
+    color:var(--muted);
+    transition:all .15s ease;
+  }
+  .lang-toggle button[aria-pressed="true"]{
+    background:var(--primary);
+    color:#fff;
+  }
+
+  .pulse-strip{
+    height:34px;
+    overflow:hidden;
+    border-top:1px solid var(--border-soft);
+  }
+  .pulse-strip svg{display:block;width:100%;height:100%;}
+
+  /* ---------- layout ---------- */
+  main{
+    max-width:1180px;
+    margin:0 auto;
+    padding:36px 28px 64px;
+    display:grid;
+    grid-template-columns:1.15fr 1fr;
+    gap:40px;
+    align-items:start;
+  }
+  @media (max-width:920px){
+    main{grid-template-columns:1fr;}
+  }
+
+  .subtitle{
+    max-width:60ch;
+    font-size:14.5px;
+    line-height:1.6;
+    color:var(--ink-soft);
+    margin:0 0 20px;
+  }
+
+  .search-box{
+    display:flex;align-items:center;gap:9px;
+    border:1px solid var(--border);
+    background:var(--card);
+    border-radius:10px;
+    padding:11px 14px;
+    box-shadow:0 1px 2px rgba(23,36,31,0.03);
+  }
+  .search-box svg{flex-shrink:0;color:var(--muted);}
+  .search-box input{
+    border:none;outline:none;background:transparent;
+    width:100%;font-size:14px;color:var(--ink);
+  }
+  .search-box input::placeholder{color:var(--muted);}
+
+  .category-group{margin-top:26px;}
+  .category-group + .category-group{margin-top:22px;}
+  .category-label{
+    font-size:10.5px;
+    font-weight:600;
+    letter-spacing:0.13em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 10px;
+  }
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--ink);
+    border-radius:999px;
+    padding:7px 14px;
+    font-size:13.5px;
+    transition:all .12s ease;
+  }
+  .chip:hover{border-color:var(--primary);background:var(--primary-soft);}
+  .chip[aria-pressed="true"]{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+    box-shadow:0 1px 2px rgba(21,63,52,0.25);
+  }
+
+  /* ---------- aside / results ---------- */
+  aside{position:sticky;top:104px;}
+
+  .selected-card{
+    border:1px solid var(--border);
+    background:var(--card);
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 1px 3px rgba(23,36,31,0.04);
+  }
+  .selected-head{display:flex;align-items:center;justify-content:space-between;}
+  .selected-head h2{font-size:13.5px;font-weight:600;margin:0;}
+  .selected-head .count{color:var(--muted);font-weight:500;}
+  .clear-btn{
+    border:none;background:none;
+    display:flex;align-items:center;gap:5px;
+    font-size:11.5px;color:var(--muted);
+  }
+  .clear-btn:hover{color:var(--urgent);}
+  .selected-list{
+    margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;min-height:20px;
+  }
+  .selected-empty{font-size:13px;color:var(--muted);}
+  .selected-pill{
+    border:none;border-radius:7px;
+    background:var(--routine-soft);
+    color:var(--ink-soft);
+    font-size:12px;
+    padding:5px 9px;
+    display:inline-flex;align-items:center;gap:5px;
+  }
+  .selected-pill:hover{background:var(--urgent-soft);color:var(--urgent);}
+
+  .results-title{
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--font-display);
+    font-size:16px;font-weight:600;
+    margin:26px 0 12px;
+  }
+
+  .results-list{display:flex;flex-direction:column;gap:12px;}
+
+  .empty-note{
+    border:1px dashed var(--border);
+    border-radius:12px;
+    padding:16px;
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  .result-card{
+    border:1px solid var(--border);
+    background:var(--card);
+    border-radius:14px;
+    padding:16px;
+    transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .result-card:hover{box-shadow:0 4px 14px rgba(23,36,31,0.07);transform:translateY(-1px);}
+  .result-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .result-rx{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.03em;
+  }
+  .result-name{
+    font-family:var(--font-display);
+    font-size:15.5px;
+    font-weight:600;
+    margin:1px 0 0;
+    line-height:1.3;
+  }
+  .urgency-badge{
+    display:inline-block;
+    margin-top:7px;
+    border-radius:6px;
+    padding:2.5px 8px;
+    font-size:10px;
+    font-weight:600;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+  .urgency-routine{background:var(--routine-soft);color:var(--routine);}
+  .urgency-prompt{background:var(--prompt-soft);color:var(--prompt);}
+  .urgency-urgent{background:var(--urgent-soft);color:var(--urgent);}
+
+  .confidence-block{text-align:right;flex-shrink:0;}
+  .confidence-num{
+    font-family:var(--font-mono);
+    font-size:22px;
+    font-weight:600;
+    color:var(--primary);
+    line-height:1;
+  }
+  .confidence-label{
+    font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--muted);margin-top:3px;
+  }
+
+  .tick-scale{display:flex;gap:2.5px;margin-top:12px;}
+  .tick{
+    height:14px;flex:1;border-radius:2px;
+    background:var(--border-soft);
+  }
+  .tick.filled{background:var(--primary);}
+  .tick.filled.urgent{background:var(--urgent);}
+  .tick.filled.prompt{background:var(--prompt);}
+
+  .result-line{
+    margin:10px 0 0;
+    font-size:12px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+  .result-line b{color:var(--ink);font-weight:600;}
+
+  .disclaimer{
+    margin-top:22px;
+    display:flex;gap:9px;
+    background:var(--routine-soft);
+    border-radius:12px;
+    padding:13px 14px;
+    font-size:12px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+  .disclaimer svg{flex-shrink:0;margin-top:1px;color:var(--prompt);}
+
+  @media (max-width:920px){
+    aside{position:static;margin-top:8px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-row">
+      <div class="brand">
+        <span class="brand-mark">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 4.2 2.3.3.3 0 0 0 4.8 2.3M15 3v4M15 15v6M15 12v.01M18 21V10.5a5.5 5.5 0 0 0-11 0V19a3 3 0 0 1-6 0v-1.5"/><circle cx="20" cy="10" r="2"/></svg>
+        </span>
+        <div class="brand-text">
+          <h1 data-t="title">Symptom Checker for Clinicians</h1>
+          <p data-t="tagline">Clinical decision support</p>
+        </div>
+      </div>
+
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="tr" aria-pressed="false">Türkçe</button>
+      </div>
+    </div>
+  </div>
+  <div class="pulse-strip" aria-hidden="true">
+    <svg viewBox="0 0 1180 34" preserveAspectRatio="none">
+      <polyline points="0,17 260,17 285,17 300,4 315,30 330,17 350,17 620,17 645,17 660,4 675,30 690,17 710,17 1180,17"
+        fill="none" stroke="#1F5D4C" stroke-width="1.4" opacity="0.45"/>
+    </svg>
+  </div>
+</header>
+
+<main>
+  <section>
+    <p class="subtitle" data-t="subtitle">Select the patient's symptoms below to see ranked possible conditions with confidence scores.</p>
+
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchInput" type="text" data-t-placeholder="search" placeholder="Search symptoms…">
+    </div>
+
+    <div id="symptomGroups"></div>
+  </section>
+
+  <aside>
+    <div class="selected-card">
+      <div class="selected-head">
+        <h2><span data-t="selected">Selected symptoms</span> <span class="count">(<span id="selCount">0</span>)</span></h2>
+        <button class="clear-btn" id="clearBtn" style="display:none;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          <span data-t="clear">Clear</span>
+        </button>
+      </div>
+      <div class="selected-list" id="selectedList"></div>
+    </div>
+
+    <h2 class="results-title">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--primary)"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span data-t="results">Possible conditions</span>
+    </h2>
+    <div class="results-list" id="resultsList"></div>
+
+    <p class="disclaimer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+      <span data-t="disclaimer">This tool is a decision-support aid only and does not replace clinical judgment, physical examination, or diagnostic testing.</span>
+    </p>
+  </aside>
+</main>
+
+<script>
+/* ============================= DATA ============================= */
+const UI = {
+  title:      {en:"Clinical Symptom Assessment", tr:"Klinik Semptom Değerlendirmesi"},
+  tagline:    {en:"Clinical decision support", tr:"Klinik karar desteği"},
+  subtitle:   {en:"Select the symptoms observed. The engine ranks possible conditions with a confidence score.",
+               tr:"Gözlenen semptomları seçin. Sistem olası tanıları güven oranıyla sıralar."},
+  search:     {en:"Search symptoms…", tr:"Semptom ara…"},
+  selected:   {en:"Selected symptoms", tr:"Seçili semptomlar"},
+  clear:      {en:"Clear all", tr:"Tümünü temizle"},
+  empty:      {en:"No symptoms selected yet. Pick at least one to generate a differential list.",
+               tr:"Henüz semptom seçilmedi. Ayırıcı tanı listesi için en az bir semptom seçin."},
+  results:    {en:"Possible conditions", tr:"Olası tanılar"},
+  noMatch:    {en:"No condition in the knowledge base matches this combination strongly.",
+               tr:"Bilgi tabanında bu kombinasyonla güçlü eşleşen bir tanı yok."},
+  confidence: {en:"Confidence", tr:"Güven oranı"},
+  matched:    {en:"Matched findings", tr:"Uyumlu bulgular"},
+  nextStep:   {en:"Suggested next step", tr:"Önerilen sonraki adım"},
+  disclaimer: {en:"Decision support only. Does not replace clinical examination, laboratory data, or physician judgement.",
+               tr:"Yalnızca karar desteğidir. Klinik muayene, laboratuvar verileri veya hekim kararının yerini almaz."},
+  urgency: {
+    routine: {en:"Routine", tr:"Rutin"},
+    prompt:  {en:"Prompt review", tr:"Erken değerlendirme"},
+    urgent:  {en:"Urgent", tr:"Acil"},
+  },
+  pageTitle: {en:"Clinical Symptom Assessment | Confidence-Scored Diagnoses",
+              tr:"Klinik Semptom Değerlendirmesi | Güven Skorlu Tanılar"},
+  pageDesc:  {en:"Select patient symptoms and get ranked possible conditions with confidence scores, in English or Turkish.",
+              tr:"Hasta semptomlarını seçin ve güven skorlarıyla sıralanmış olası tanıları İngilizce veya Türkçe olarak görün."}
+};
+
+const CATEGORY_ORDER = ["general","respiratory","digestive","neuro","cardio","musculoskeletal","skin"];
+const CATEGORY_LABELS = {
+  general:         {en:"General",        tr:"Genel"},
+  respiratory:     {en:"Respiratory",     tr:"Solunum"},
+  digestive:       {en:"Digestive",       tr:"Sindirim"},
+  neuro:           {en:"Neurological",    tr:"Nörolojik"},
+  cardio:          {en:"Cardiovascular",  tr:"Kalp-Damar"},
+  musculoskeletal: {en:"Musculoskeletal", tr:"Kas-İskelet"},
+  skin:            {en:"Skin",            tr:"Deri"},
+};
+
+const SYMPTOMS = [
+  { id: "fever", en: "Fever", tr: "Ateş", category: "general" },
+  { id: "chills", en: "Chills", tr: "Titreme", category: "general" },
+  { id: "fatigue", en: "Fatigue", tr: "Yorgunluk", category: "general" },
+  { id: "weight_loss", en: "Unintentional weight loss", tr: "İstemsiz kilo kaybı", category: "general" },
+  { id: "night_sweats", en: "Night sweats", tr: "Gece terlemesi", category: "general" },
+  { id: "appetite_loss", en: "Loss of appetite", tr: "İştah kaybı", category: "general" },
+
+  { id: "cough", en: "Cough", tr: "Öksürük", category: "respiratory" },
+  { id: "sputum", en: "Productive sputum", tr: "Balgamlı öksürük", category: "respiratory" },
+  { id: "sore_throat", en: "Sore throat", tr: "Boğaz ağrısı", category: "respiratory" },
+  { id: "runny_nose", en: "Runny / blocked nose", tr: "Burun akıntısı / tıkanıklığı", category: "respiratory" },
+  { id: "sneezing", en: "Sneezing", tr: "Hapşırma", category: "respiratory" },
+  { id: "dyspnea", en: "Shortness of breath", tr: "Nefes darlığı", category: "respiratory" },
+  { id: "wheezing", en: "Wheezing", tr: "Hışıltılı solunum", category: "respiratory" },
+  { id: "anosmia", en: "Loss of smell or taste", tr: "Koku veya tat kaybı", category: "respiratory" },
+
+  { id: "nausea", en: "Nausea", tr: "Bulantı", category: "digestive" },
+  { id: "vomiting", en: "Vomiting", tr: "Kusma", category: "digestive" },
+  { id: "diarrhea", en: "Diarrhea", tr: "İshal", category: "digestive" },
+  { id: "abdominal_pain", en: "Abdominal pain", tr: "Karın ağrısı", category: "digestive" },
+  { id: "rlq_pain", en: "Right lower quadrant pain", tr: "Sağ alt karın ağrısı", category: "digestive" },
+  { id: "heartburn", en: "Heartburn / reflux", tr: "Mide yanması / reflü", category: "digestive" },
+  { id: "bloating", en: "Bloating", tr: "Şişkinlik", category: "digestive" },
+  { id: "dysuria", en: "Painful urination", tr: "İdrar yaparken yanma", category: "digestive" },
+  { id: "frequent_urination", en: "Frequent urination", tr: "Sık idrara çıkma", category: "digestive" },
+  { id: "excessive_thirst", en: "Excessive thirst", tr: "Aşırı susama", category: "digestive" },
+
+  { id: "headache", en: "Headache", tr: "Baş ağrısı", category: "neuro" },
+  { id: "unilateral_headache", en: "One-sided throbbing headache", tr: "Tek taraflı zonklayıcı baş ağrısı", category: "neuro" },
+  { id: "photophobia", en: "Light sensitivity", tr: "Işığa duyarlılık", category: "neuro" },
+  { id: "aura", en: "Visual aura", tr: "Görsel aura", category: "neuro" },
+  { id: "dizziness", en: "Dizziness", tr: "Baş dönmesi", category: "neuro" },
+  { id: "neck_stiffness", en: "Neck stiffness", tr: "Ense sertliği", category: "neuro" },
+  { id: "confusion", en: "Confusion", tr: "Bilinç bulanıklığı", category: "neuro" },
+  { id: "low_mood", en: "Persistent low mood", tr: "Sürekli çökkün ruh hali", category: "neuro" },
+  { id: "anxiety", en: "Anxiety / restlessness", tr: "Kaygı / huzursuzluk", category: "neuro" },
+  { id: "insomnia", en: "Insomnia", tr: "Uykusuzluk", category: "neuro" },
+
+  { id: "chest_pain", en: "Chest pain", tr: "Göğüs ağrısı", category: "cardio" },
+  { id: "exertional_chest_pain", en: "Chest pain on exertion", tr: "Eforla artan göğüs ağrısı", category: "cardio" },
+  { id: "palpitations", en: "Palpitations", tr: "Çarpıntı", category: "cardio" },
+  { id: "leg_swelling", en: "Leg swelling", tr: "Bacaklarda şişlik", category: "cardio" },
+  { id: "arm_radiation", en: "Pain radiating to arm/jaw", tr: "Kola/çeneye yayılan ağrı", category: "cardio" },
+
+  { id: "joint_pain", en: "Joint pain", tr: "Eklem ağrısı", category: "musculoskeletal" },
+  { id: "joint_swelling", en: "Joint swelling", tr: "Eklemde şişlik", category: "musculoskeletal" },
+  { id: "morning_stiffness", en: "Morning stiffness", tr: "Sabah tutukluğu", category: "musculoskeletal" },
+  { id: "muscle_aches", en: "Muscle aches", tr: "Kas ağrıları", category: "musculoskeletal" },
+  { id: "back_pain", en: "Low back pain", tr: "Bel ağrısı", category: "musculoskeletal" },
+
+  { id: "rash", en: "Rash", tr: "Döküntü", category: "skin" },
+  { id: "itching", en: "Itching", tr: "Kaşıntı", category: "skin" },
+  { id: "hives", en: "Hives", tr: "Kurdeşen", category: "skin" },
+  { id: "pallor", en: "Pale skin", tr: "Ciltte solukluk", category: "skin" },
+];
+
+const CONDITIONS = [
+  { id: "influenza", en: "Influenza", tr: "Grip (İnfluenza)", urgency: "prompt",
+    weights: { fever: 3, chills: 2, muscle_aches: 3, fatigue: 2, cough: 2, sore_throat: 1, headache: 2 },
+    adviceEn: "Rest, hydration, antipyretics; consider rapid influenza testing within 48h of onset.",
+    adviceTr: "İstirahat, sıvı alımı, ateş düşürücü; ilk 48 saatte hızlı influenza testi düşünülebilir." },
+  { id: "common_cold", en: "Common cold (viral URTI)", tr: "Soğuk algınlığı (viral ÜSYE)", urgency: "routine",
+    weights: { runny_nose: 3, sneezing: 3, sore_throat: 2, cough: 2, fatigue: 1, headache: 1 },
+    adviceEn: "Supportive care; antibiotics are not indicated.",
+    adviceTr: "Destekleyici tedavi; antibiyotik endikasyonu yoktur." },
+  { id: "covid", en: "COVID-19", tr: "COVID-19", urgency: "prompt",
+    weights: { fever: 2, cough: 3, anosmia: 4, fatigue: 2, dyspnea: 2, sore_throat: 1, headache: 1 },
+    adviceEn: "Antigen or PCR testing; monitor oxygen saturation if dyspneic.",
+    adviceTr: "Antijen veya PCR testi; nefes darlığı varsa oksijen satürasyonu izlenmeli." },
+  { id: "allergic_rhinitis", en: "Allergic rhinitis", tr: "Alerjik rinit", urgency: "routine",
+    weights: { sneezing: 3, runny_nose: 3, itching: 2, wheezing: 1, cough: 1 },
+    adviceEn: "Antihistamines, nasal steroids, allergen avoidance.",
+    adviceTr: "Antihistaminik, nazal steroid, alerjenden kaçınma." },
+  { id: "pneumonia", en: "Community-acquired pneumonia", tr: "Toplum kökenli pnömoni", urgency: "urgent",
+    weights: { fever: 3, cough: 3, sputum: 3, dyspnea: 3, chest_pain: 2, chills: 2, fatigue: 1 },
+    adviceEn: "Chest imaging, CRP/CBC, CURB-65 scoring and empiric antibiotics.",
+    adviceTr: "Akciğer görüntülemesi, CRP/hemogram, CURB-65 skoru ve ampirik antibiyotik." },
+  { id: "asthma", en: "Asthma exacerbation", tr: "Astım atağı", urgency: "prompt",
+    weights: { wheezing: 4, dyspnea: 3, cough: 2, chest_pain: 1 },
+    adviceEn: "Spirometry / peak flow, inhaled bronchodilator response.",
+    adviceTr: "Spirometri / PEF ölçümü, inhaler bronkodilatatör yanıtı." },
+  { id: "gastroenteritis", en: "Acute gastroenteritis", tr: "Akut gastroenterit", urgency: "routine",
+    weights: { diarrhea: 4, vomiting: 3, nausea: 2, abdominal_pain: 2, fever: 1 },
+    adviceEn: "Oral rehydration; stool studies if bloody or persistent.",
+    adviceTr: "Oral rehidratasyon; kanlı veya uzayan seyirde dışkı incelemesi." },
+  { id: "appendicitis", en: "Acute appendicitis", tr: "Akut apandisit", urgency: "urgent",
+    weights: { rlq_pain: 4, abdominal_pain: 3, nausea: 2, vomiting: 2, fever: 2, appetite_loss: 2 },
+    adviceEn: "Surgical evaluation now; Alvarado score, ultrasound or CT.",
+    adviceTr: "Acil cerrahi değerlendirme; Alvarado skoru, ultrason veya BT." },
+  { id: "gerd", en: "Gastroesophageal reflux disease", tr: "Gastroözofageal reflü hastalığı", urgency: "routine",
+    weights: { heartburn: 4, chest_pain: 2, nausea: 1, bloating: 2, cough: 1 },
+    adviceEn: "Lifestyle measures and a PPI trial; endoscopy if alarm features.",
+    adviceTr: "Yaşam tarzı önlemleri ve PPİ denemesi; alarm bulgusu varsa endoskopi." },
+  { id: "uti", en: "Urinary tract infection", tr: "İdrar yolu enfeksiyonu", urgency: "prompt",
+    weights: { dysuria: 4, frequent_urination: 3, abdominal_pain: 2, fever: 2 },
+    adviceEn: "Urinalysis and culture; empiric therapy per local resistance.",
+    adviceTr: "İdrar tetkiki ve kültür; yerel direnç paternine göre ampirik tedavi." },
+  { id: "diabetes", en: "Type 2 diabetes mellitus", tr: "Tip 2 diabetes mellitus", urgency: "prompt",
+    weights: { excessive_thirst: 4, frequent_urination: 3, fatigue: 2, weight_loss: 2, itching: 1 },
+    adviceEn: "Fasting glucose and HbA1c; screen for complications.",
+    adviceTr: "Açlık glukozu ve HbA1c; komplikasyon taraması." },
+  { id: "migraine", en: "Migraine", tr: "Migren", urgency: "routine",
+    weights: { unilateral_headache: 4, photophobia: 3, aura: 3, nausea: 2, headache: 2, vomiting: 1 },
+    adviceEn: "Triptans for acute attacks; consider prophylaxis if frequent.",
+    adviceTr: "Akut atakta triptan; sık ataklarda profilaksi düşünülmeli." },
+  { id: "meningitis", en: "Meningitis", tr: "Menenjit", urgency: "urgent",
+    weights: { neck_stiffness: 4, fever: 3, headache: 3, photophobia: 2, confusion: 3, vomiting: 1, rash: 2 },
+    adviceEn: "Emergency referral: blood cultures, empiric antibiotics, lumbar puncture.",
+    adviceTr: "Acil sevk: kan kültürü, ampirik antibiyotik, lomber ponksiyon." },
+  { id: "acs", en: "Acute coronary syndrome", tr: "Akut koroner sendrom", urgency: "urgent",
+    weights: { chest_pain: 3, exertional_chest_pain: 3, arm_radiation: 4, dyspnea: 2, nausea: 1, palpitations: 1 },
+    adviceEn: "Call emergency services: ECG within 10 minutes and troponin.",
+    adviceTr: "Acil çağrı: 10 dakika içinde EKG ve troponin." },
+  { id: "heart_failure", en: "Heart failure", tr: "Kalp yetmezliği", urgency: "prompt",
+    weights: { dyspnea: 3, leg_swelling: 4, fatigue: 2, palpitations: 1, chest_pain: 1 },
+    adviceEn: "BNP, echocardiography, diuretic optimization.",
+    adviceTr: "BNP, ekokardiyografi, diüretik optimizasyonu." },
+  { id: "anemia", en: "Iron deficiency anemia", tr: "Demir eksikliği anemisi", urgency: "routine",
+    weights: { fatigue: 3, pallor: 4, dizziness: 2, palpitations: 2, dyspnea: 1 },
+    adviceEn: "CBC, ferritin, and evaluation for a bleeding source.",
+    adviceTr: "Hemogram, ferritin ve kanama odağı araştırması." },
+  { id: "rheumatoid", en: "Rheumatoid arthritis", tr: "Romatoid artrit", urgency: "prompt",
+    weights: { joint_pain: 3, joint_swelling: 3, morning_stiffness: 4, fatigue: 2 },
+    adviceEn: "RF / anti-CCP, ESR-CRP, rheumatology referral.",
+    adviceTr: "RF / anti-CCP, ESH-CRP, romatoloji konsültasyonu." },
+  { id: "mech_back_pain", en: "Mechanical low back pain", tr: "Mekanik bel ağrısı", urgency: "routine",
+    weights: { back_pain: 4, muscle_aches: 2, joint_pain: 1 },
+    adviceEn: "Stay active, analgesia; image only with red flags.",
+    adviceTr: "Aktif kalma, analjezi; kırmızı bayrak yoksa görüntüleme gereksiz." },
+  { id: "urticaria", en: "Acute urticaria", tr: "Akut ürtiker", urgency: "prompt",
+    weights: { hives: 4, itching: 3, rash: 2, dyspnea: 1 },
+    adviceEn: "Antihistamines; assess for angioedema or anaphylaxis.",
+    adviceTr: "Antihistaminik; anjiyoödem veya anafilaksi açısından değerlendirme." },
+  { id: "hypothyroid", en: "Hypothyroidism", tr: "Hipotiroidi", urgency: "routine",
+    weights: { fatigue: 3, low_mood: 2, muscle_aches: 1, insomnia: 1, appetite_loss: 1, joint_pain: 1 },
+    adviceEn: "TSH and free T4.",
+    adviceTr: "TSH ve serbest T4." },
+  { id: "depression", en: "Major depressive episode", tr: "Majör depresif atak", urgency: "prompt",
+    weights: { low_mood: 4, insomnia: 3, fatigue: 3, appetite_loss: 2, weight_loss: 1 },
+    adviceEn: "PHQ-9, risk assessment, psychotherapy and/or pharmacotherapy.",
+    adviceTr: "PHQ-9, risk değerlendirmesi, psikoterapi ve/veya farmakoterapi." },
+  { id: "anxiety_disorder", en: "Generalized anxiety disorder", tr: "Yaygın anksiyete bozukluğu", urgency: "routine",
+    weights: { anxiety: 4, palpitations: 2, insomnia: 3, dizziness: 1, chest_pain: 1, muscle_aches: 1 },
+    adviceEn: "GAD-7; CBT first line, SSRI if moderate to severe.",
+    adviceTr: "GAD-7; ilk seçenek BDT, orta-şiddetli olguda SSRI." },
+  { id: "tb", en: "Pulmonary tuberculosis", tr: "Akciğer tüberkülozu", urgency: "urgent",
+    weights: { cough: 3, night_sweats: 4, weight_loss: 3, fever: 2, sputum: 2, fatigue: 1, appetite_loss: 1 },
+    adviceEn: "Isolate, chest X-ray, sputum AFB and NAAT.",
+    adviceTr: "İzolasyon, akciğer grafisi, balgamda ARB ve NAAT." },
+];
+
+/* ============================= STATE ============================= */
+let lang = "en";
+let selected = new Set();
+let query = "";
+
+const el = (id) => document.getElementById(id);
+const t = (dict) => dict[lang];
+
+/* ============================= SCORING ============================= */
+function score() {
+  if (selected.size === 0) return [];
+  const symptomName = (id) => {
+    const s = SYMPTOMS.find(x => x.id === id);
+    return s ? s[lang] : id;
+  };
+  return CONDITIONS.map(c => {
+    const weightVals = Object.values(c.weights);
+    const total = weightVals.reduce((a,b) => a+b, 0);
+    const matchedIds = Object.keys(c.weights).filter(id => selected.has(id));
+    const hit = matchedIds.reduce((a,id) => a + (c.weights[id] ?? 0), 0);
+    const sensitivity = hit / total;
+    const specificity = matchedIds.length / selected.size;
+    const raw = 0.68 * sensitivity + 0.32 * specificity;
+    return {
+      id: c.id,
+      name: c[lang],
+      confidence: Math.round(Math.min(0.97, raw) * 100),
+      matched: matchedIds.map(symptomName),
+      advice: lang === "en" ? c.adviceEn : c.adviceTr,
+      urgency: c.urgency,
+    };
+  })
+  .filter(r => r.confidence >= 18 && r.matched.length > 0)
+  .sort((a,b) => b.confidence - a.confidence)
+  .slice(0, 6);
+}
+
+/* ============================= RENDER ============================= */
+function renderSymptoms() {
+  const q = query.trim().toLowerCase();
+  const list = q
+    ? SYMPTOMS.filter(s => s.en.toLowerCase().includes(q) || s.tr.toLowerCase().includes(q))
+    : SYMPTOMS;
+
+  const byCat = new Map();
+  for (const s of list) {
+    const arr = byCat.get(s.category) ?? [];
+    arr.push(s);
+    byCat.set(s.category, arr);
+  }
+
+  const container = el("symptomGroups");
+  container.innerHTML = "";
+  for (const cat of CATEGORY_ORDER) {
+    const items = byCat.get(cat);
+    if (!items || items.length === 0) continue;
+    const group = document.createElement("div");
+    group.className = "category-group";
+
+    const label = document.createElement("p");
+    label.className = "category-label";
+    label.textContent = CATEGORY_LABELS[cat][lang];
+    group.appendChild(label);
+
+    const row = document.createElement("div");
+    row.className = "chip-row";
+    for (const s of items) {
+      const on = selected.has(s.id);
+      const btn = document.createElement("button");
+      btn.className = "chip";
+      btn.type = "button";
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.textContent = s[lang];
+      btn.addEventListener("click", () => toggleSymptom(s.id));
+      row.appendChild(btn);
+    }
+    group.appendChild(row);
+    container.appendChild(group);
+  }
+}
+
+function renderSelected() {
+  el("selCount").textContent = selected.size;
+  el("clearBtn").style.display = selected.size > 0 ? "inline-flex" : "none";
+
+  const listEl = el("selectedList");
+  listEl.innerHTML = "";
+  if (selected.size === 0) {
+    const p = document.createElement("p");
+    p.className = "selected-empty";
+    p.textContent = t(UI.empty);
+    listEl.appendChild(p);
+    return;
+  }
+  for (const id of selected) {
+    const s = SYMPTOMS.find(x => x.id === id);
+    if (!s) continue;
+    const btn = document.createElement("button");
+    btn.className = "selected-pill";
+    btn.type = "button";
+    btn.innerHTML = `${s[lang]} <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+    btn.addEventListener("click", () => toggleSymptom(id));
+    listEl.appendChild(btn);
+  }
+}
+
+function tickScale(confidence, urgency) {
+  const filledCount = Math.round(confidence / 10);
+  let html = "";
+  for (let i = 0; i < 10; i++) {
+    const filled = i < filledCount;
+    const cls = filled ? `tick filled ${urgency === "urgent" ? "urgent" : urgency === "prompt" ? "prompt" : ""}` : "tick";
+    html += `<div class="${cls}"></div>`;
+  }
+  return html;
+}
+
+function renderResults() {
+  const results = score();
+  const listEl = el("resultsList");
+  listEl.innerHTML = "";
+
+  if (selected.size > 0 && results.length === 0) {
+    const p = document.createElement("p");
+    p.className = "empty-note";
+    p.textContent = t(UI.noMatch);
+    listEl.appendChild(p);
+    return;
+  }
+
+  results.forEach((r, i) => {
+    const card = document.createElement("article");
+    card.className = "result-card";
+    const idx = String(i + 1).padStart(2, "0");
+    card.innerHTML = `
+      <div class="result-top">
+        <div>
+          <div class="result-rx">RX·${idx}</div>
+          <h3 class="result-name">${r.name}</h3>
+          <span class="urgency-badge urgency-${r.urgency}">${t(UI.urgency[r.urgency])}</span>
+        </div>
+        <div class="confidence-block">
+          <div class="confidence-num">${r.confidence}%</div>
+          <div class="confidence-label">${t(UI.confidence)}</div>
+        </div>
+      </div>
+      <div class="tick-scale">${tickScale(r.confidence, r.urgency)}</div>
+      <p class="result-line"><b>${t(UI.matched)}:</b> ${r.matched.join(", ")}</p>
+      <p class="result-line"><b>${t(UI.nextStep)}:</b> ${r.advice}</p>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+function renderAll() {
+  renderSymptoms();
+  renderSelected();
+  renderResults();
+}
+
+/* ============================= ACTIONS ============================= */
+function toggleSymptom(id) {
+  if (selected.has(id)) selected.delete(id);
+  else selected.add(id);
+  renderAll();
+}
+
+function setLang(l) {
+  lang = l;
+  document.getElementById("htmlRoot").lang = l;
+  document.querySelectorAll("[data-lang]").forEach(b => {
+    b.setAttribute("aria-pressed", b.dataset.lang === l ? "true" : "false");
+  });
+  document.querySelectorAll("[data-t]").forEach(node => {
+    const key = node.dataset.t;
+    if (UI[key]) node.textContent = t(UI[key]);
+  });
+  el("searchInput").placeholder = t(UI.search);
+  document.title = t(UI.pageTitle);
+  el("pageDesc").setAttribute("content", t(UI.pageDesc));
+  renderAll();
+}
+
+/* ============================= INIT ============================= */
+document.querySelectorAll("[data-lang]").forEach(btn => {
+  btn.addEventListener("click", () => setLang(btn.dataset.lang));
+});
+el("clearBtn").addEventListener("click", () => { selected = new Set(); renderAll(); });
+el("searchInput").addEventListener("input", (e) => { query = e.target.value; renderSymptoms(); });
+
+setLang("en");
+</script>
+</body>
+</html>
