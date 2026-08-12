@@ -4,6 +4,9 @@ Tek dosyalık, bağımsız (standalone) bir klinik karar destek aracı. Seçilen
 
 Orijinal proje Lovable üzerinde React (TanStack Router) ile geliştirilmişti; bu sürüm aynı mantığı ve aynı veri setini (`health-data.ts`) kullanarak saf HTML/CSS/JavaScript'e taşınmıştır. Herhangi bir derleme adımına veya sunucuya ihtiyaç duymaz.
 
+Page: https://rukenzilan.github.io/diagnose-pal/
+
+
 ## Dosyalar
 
 | Dosya | Açıklama |
