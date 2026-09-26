@@ -8,7 +8,7 @@ The original project was built on Lovable with React (TanStack Router). This ver
 
 ## Live demo
 
-The original React version is live at: **[(https://diagnose-pal.vercel.app/)](https://diagnose-pal.vercel.app/)/**
+The original React version is live at: **[(https://diagnose-pal.vercel.app/)](https://diagnose-pal.vercel.app/)**
 
 ## Files
 
